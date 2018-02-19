@@ -1,10 +1,10 @@
-
-#!/usr/env/ruby
+#!/usr/bin/env/ ruby
 
 require "sidekiq"
-
-puts "Method Name: #{Sidekiq.methods[0]}"
+require "sidekiq/cli"
+methods = Sidekiq.methods.sort
+puts "Method Name: #{methods.last}"
 puts "Executing ..."
-Sidekiq.send(Sidekiq.methods[0])
-
+Sidekiq.send(methods.last)
+Sidekiq::CLI.instance.send(:print_banner)
 exit
