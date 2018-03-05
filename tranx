@@ -1,0 +1,39 @@
+module OneTimers
+  module AddProviderNameToSms
+    def self.run
+      start_point = Sms.all.size - 10000
+
+      start_time = Time.now
+      records = 0
+      Sms.transaction do
+        
+        Sms.select(:id,:api_key,:provider_name).find_in_batches(start:start_point, batch_size: 1000) do |sms_batch|
+
+          sms_batch.each do |sms|
+            records = records + 1
+            if sms.api_key.present? && sms.api_key.include?("-")
+              provider_name = Gupshup.to_s
+            else
+              provider_name = Exotel.to_s
+            end
+            #sms.update_column(:provider_name,provider_name)
+
+            #sms.provider_name = provider_name
+            #sms.save(validate: false)
+
+            
+            ActiveRecord::Base.connection.execute(<<-EOQ)
+              UPDATE  sms
+              SET     provider_name = "#{provider_name}"
+              where id = #{sms.id}
+            EOQ
+
+            
+            Sms.where(:id => gupshup_ids).update_all(:provider_name => Gupshup.to_s) if gupshup_ids.present?
+          end
+        end
+        puts "time #{(start_time- Time.now)} #startpoint #{start_point} records #{records}"
+      end
+    end
+  end
+end
